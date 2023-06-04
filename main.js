@@ -1,6 +1,3 @@
-
-
-
 'use strict';
 
 const { response } = require("express");
@@ -39,28 +36,31 @@ var blockchain= [getGenesisBlock()];
 
 
 
-var initHttpServer= () =>{
-    var app= express();
+var initHttpServer = () => {
+    var app = express();
     app.use(bodyParser.json());
 
-app.get('/blocks', (req, res) =>res.send(JSON.stringify(blockchain)));
-app.post('/mineBlock', (req, res) =>{
-        var newBlock= generateNextBlock(req.body.data);
+app.get('/blocks', (req, res) => res.send(JSON.stringify(blockchain)));
+app.post('/mineBlock', (req, res) => {
+        var newBlock = generateNextBlock(req.body.data);
         addBlock(newBlock);
         broadcast(responseLatestMsg());
-        console.log('block added: '+ JSON.stringify(newBlock));
+        console.log('block added: ' + JSON.stringify(newBlock));
     res.send();
 });
-app.get('/peers', (req, res) =>{
-    res.send(sockets.map(s=>s._socket.remoteAddress+ ':'+ s._socket.remotePort));});
-    app.post('/addPeer', (req, res) =>{connectToPeers([req.body.peer]);res.send();});
-    app.listen(http_port, () =>console.log('Listening http on port: '+ http_port));
+app.get('/peers', (req, res) => {
+    res.send(sockets.map(s => s._socket.remoteAddress+ ':' + s._socket.remotePort));});
+    app.post('/addPeer', (req, res) => {connectToPeers([req.body.peer]);
+        res.send();
+    }
+    );
+    app.listen(http_port, () => console.log('Listening http on port: ' + http_port));
 };
 
-var initP2PServer= () =>{
-    var server= new WebSocket.Server({port:p2p_port});
-    server.on('connection', ws=>initConnection(ws));
-    console.log('listening websocket p2p port on: '+ p2p_port);
+var initP2PServer = () => {
+    var server = new WebSocket.Server({port:p2p_port});
+    server.on('connection', ws => initConnection(ws));
+    console.log('listening websocket p2p port on: ' + p2p_port);
 };
 
 var initConnection = (ws) => {
@@ -131,21 +131,35 @@ var handleBlockchainResponse = (message) => {
     }
 };
 
-var generateNextBlock= (blockData) => {
-    var previousBlock= getLatestBlock();
-    var nextIndex= previousBlock.index + 1;
-    var nextTimestamp= new Date().getTime() / 1000;
-    var nextHash= calculateHash(nextIndex, previousBlock.hash, nextTimestamp, blockData);
-    return new Block(nextIndex, previousBlock.hash, nextTimestamp, blockData, nextHash);
-};
+var generateNextBlock = (blockData) => {
+    var previousBlock = getLatestBlock();
+    var nextIndex = previousBlock.index + 1;
+    var nextTimestamp = new Date().getTime() / 1000;
+    var randomNumber1 = Math.floor(Math.random() * 100); // Генерируем случайное число от 0 до 99
+    var randomNumber2 = Math.floor(Math.random() * 100); // Генерируем еще одно случайное число от 0 до 99
+    var sum = randomNumber1 + randomNumber2; // Складываем два случайных числа
+    var nextData = blockData + "-" + sum.toString(); // Добавляем сумму к данным блока
+    var nextHash = calculateHash(nextIndex, previousBlock.hash, nextTimestamp, nextData);
+    return new Block(nextIndex, previousBlock.hash, nextTimestamp, nextData, nextHash);
+  };
+  
+  
 //////////
 var calculateHashForBlock = (block) => {
     return calculateHash(block.index, block.previousHash, block.timestamp, block.data);
 };
 ///////////
 var calculateHash = (index, previousHash, timestamp, data) => {
-    return CryptoJS.SHA256(index+ previousHash+ timestamp+ data).toString();
-};
+    var hash = CryptoJS.SHA256(index + previousHash + timestamp + data).toString();
+    var desiredLength = 10; // Задаем желаемую длину хеша
+    while (hash.length < desiredLength) {
+      // Повторно вычисляем хеш, пока он не достигнет желаемой длины
+      hash = CryptoJS.SHA256(hash).toString();
+    }
+    return hash;
+  };
+  
+  
 ///////////
 var addBlock = (newBlock) =>{
     if (isValidNewBlock(newBlock, getLatestBlock())) {
@@ -168,7 +182,7 @@ var isValidNewBlock= (newBlock, previousBlock) => {
     return true;
 };
 
-var replaceChain= (newBlocks) => {
+var replaceChain = (newBlocks) => {
     if (isValidChain(newBlocks) && newBlocks.length > blockchain.length) {
         console.log('Received blockchain is valid. Replacing current blockchain with received blockchain');
         blockchain= newBlocks;broadcast(responseLatestMsg());
