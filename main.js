@@ -80,24 +80,26 @@ var mineBlock = (blockData) => {
     var numberString = nextHash.toString();
     var currentYear = new Date().getFullYear().toString();
 
-    while (nextHash.indexOf(currentYear.slice(-2)) == -1) {
-        nonce++;
-        nextTimestamp = new Date().getTime() / 1000;
-        nextHash = calculateHash(nextIndex, previousBlock.hash, nextTimestamp, blockData, nonce);
+    while (!nextHash.endsWith(currentYear.slice(-2))) {
+      nonce++;
+      nextTimestamp = new Date().getTime() / 1000;
+      nextHash = calculateHash(nextIndex, previousBlock.hash, nextTimestamp, blockData, nonce);
+  
+      console.log(
+          "\"year\": " + currentYear.slice(-3) +
+          "\"nextHash.slice\": " + nextHash.slice(-3) +
+          "\"index\": " + nextIndex +
+          ", \"previousHash\": " + previousBlock.hash +
+          ", \"timestamp\": " + nextTimestamp +
+          ", \"data\": " + blockData +
+          ", \x1b[33mhash: " + nextHash + " \x1b[0m, " +
+          "\"difficulty\": " + difficulty +
+          " \x1b[33mnonce: " + nonce + " \x1b[0m"
+      );
+  }
+  
 
-        console.log(
-            "\"year\": " + currentYear.slice(-3) +
-            "\"nextHash.slice\": " + nextHash.slice(-3) +
-            "\"index\": " + nextIndex +
-            ", \"previousHash\": " + previousBlock.hash +
-            ", \"timestamp\": " + nextTimestamp +
-            ", \"data\": " + blockData +
-            ", \x1b[33mhash: " + nextHash + " \x1b[0m, " +
-            "\"difficulty\": " + difficulty +
-            " \x1b[33mnonce: " + nonce + " \x1b[0m"
-        );
-    }
-
+    
     return new Block(nextIndex, previousBlock.hash, nextTimestamp, blockData, nextHash, difficulty, nonce);
 };
 
